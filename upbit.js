@@ -101,7 +101,7 @@ class Bot{
         if(state=='done'){
             const time = data.created_at;
             const side = data.side ;
-            const price = data.price * data.excuted_volume ;
+            const price = data.price * data.executed_volume ;
             data =  {'time':time, 'side':side, 'price':price}  ;
             this.log.push(data);
             console.log(data);
@@ -110,9 +110,9 @@ class Bot{
             }else{
                 this.ask_amount = price;
                 const profit = this.ask_amount - this.bid_amount;
-                this.totProfit += profit;
-                console.log(this.market+'profit : '+profit);
-                console.log(this.market+ 'tot profit : '+this.totProfit);
+                this.totProfit.profit += profit;
+                console.log(this.market+' profit : '+profit);
+                console.log(this.market+ ' tot profit : '+this.totProfit.profit);
             }
         }
     }    
@@ -124,16 +124,18 @@ class Bot{
             const price = res.price;
             this.upbit.order_chance(this.market)
             .then((oc)=>{
-            const myPrice = oc.data.ask_account.avg_buy_price;
-            if(myPrice*this.stopLoss > price ){
-                this.upbit.order_delete(this.uuid)
-                .then(()=>{
-                    this.ask(this.adj_price(price));
-                })
-                
-            }
+                const myPrice = oc.data.ask_account.avg_buy_price;
+                if(myPrice*this.stopLoss > price ){
+                    this.upbit.order_delete(this.uuid)
+                    .then(()=>{
+                        this.ask(this.adj_price(price));
+                     })
+                }
             })
         })
+        setTimeout(()=>{
+            this.stop()
+        },500);
     }
         
     async bid(price){
@@ -224,7 +226,7 @@ async function start() {
         
 
         //Bot ( market, min : candle , vol of money(만) )
-        zil = new Bot('KRW-ZIL',3,10);
+        zil = new Bot('KRW-ZIL',1,50);
         aave = new Bot('KRW-AAVE',5,10);
         waves = new Bot('KRW-WAVES',10,10);
         vet = new Bot('KRW-VET',5,20);
@@ -234,7 +236,7 @@ async function start() {
         // setTimeout(()=>{
         //     vet.play();
         // },2000);
-        vet.play();
+        zil.play();
         
     }
         
