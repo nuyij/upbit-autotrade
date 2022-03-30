@@ -32,8 +32,8 @@ class Bot{
         this.balance;
         this.uuid;
         this.stopLoss=0.04;
-        this.bid_amount;
-        this.ask_amount;
+        this.bid_amount=0;
+        this.ask_amount=0;
         this.log = [market];
         this.totProfit = {'profit': 0};
     }
@@ -62,6 +62,8 @@ class Bot{
             }else{
                 if(this.balance > 5000 ){
                     this.trading = true;
+                }else{
+                    this.trading = false;
                 }
                 this.body();
             }
@@ -108,31 +110,35 @@ class Bot{
             if(side=='bid'){
                 this.bid_amount = price;
             }else{
-                this.ask_amount = price;
-                const profit = this.ask_amount - this.bid_amount;
-                this.totProfit.profit += profit;
-                console.log(this.market+' profit : '+profit);
-                console.log(this.market+ ' tot profit : '+this.totProfit.profit);
+                if(this.bid_amount!=0){
+                    this.ask_amount = price;
+                    const profit = this.ask_amount - this.bid_amount;
+                    this.totProfit.profit += profit;
+                    console.log(this.market+' profit : '+profit);
+                    console.log(this.market+ ' tot profit : '+this.totProfit.profit);
+                }
             }
         }
     }    
 
     //손절가시 손절
     async stop(){
-        await this.upbit.get_bb(this.market,this.tick_kind)
-        .then((res)=>{
-            const price = res.price;
-            this.upbit.order_chance(this.market)
-            .then((oc)=>{
-                const myPrice = oc.data.ask_account.avg_buy_price;
-                if(myPrice*this.stopLoss > price ){
-                    this.upbit.order_delete(this.uuid)
-                    .then(()=>{
-                        this.ask(this.adj_price(price));
-                     })
-                }
+        if(this.trading){
+            await this.upbit.get_bb(this.market,this.tick_kind)
+            .then((res)=>{
+                const price = res.price;
+                this.upbit.order_chance(this.market)
+                .then((oc)=>{
+                    const myPrice = oc.data.ask_account.avg_buy_price;
+                    if(myPrice*this.stopLoss > price ){
+                        this.upbit.order_delete(this.uuid)
+                        .then(()=>{
+                            this.ask(this.adj_price(price));
+                        })
+                    }
+                })
             })
-        })
+        }
         setTimeout(()=>{
             this.stop()
         },500);
@@ -214,10 +220,14 @@ const log = [];
 //------------------------------------APP SERVER-----------------------------------------
 
 
+
 async function start() {
     const upbit = new Upbit(secretKey, accessKey)
 
     {
+        // let data = await upbit.order_chance('KRW-ZIL');
+        // console.log(data);
+
         // let data = await upbit.market_minute('KRW-ZIL',1,1);
         // let data = await upbit.get_bb('KRW-ZIL',5);
         // log.push(data);
@@ -226,18 +236,18 @@ async function start() {
         
 
         //Bot ( market, min : candle , vol of money(만) )
-        zil = new Bot('KRW-ZIL',1,50);
+        zil = new Bot('KRW-ZIL',5,100);
         aave = new Bot('KRW-AAVE',5,10);
-        waves = new Bot('KRW-WAVES',10,10);
+        waves = new Bot('KRW-WAVES',1,1);
         vet = new Bot('KRW-VET',5,20);
        
-        // zil.play();
+        zil.play();
         // aave.play();
         // setTimeout(()=>{
         //     vet.play();
         // },2000);
-        zil.play();
-        
+        // waves.play();
+        // zil.play();
     }
         
 }
