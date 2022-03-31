@@ -70,7 +70,6 @@ class Bot{
     async stop(){
         await this.upbit.get_bb(this.market,this.tick_kind)
         .then((res)=>{
-            const price = res.data.price;
             let {'data':oc} = this.upbit.order_chance(this.market)
             const myPrice = oc.data.ask_account.avg_but_price;
             if(myPrice*this.stopLoss > price ){
@@ -176,8 +175,8 @@ async function start() {
 
     // {
         // console.log('-- order_chance -------------------------------------------------')
-        let {'data':dat} = await upbit.order_chance('KRW-VET')
-        console.log(dat)
+        // let {'data':dat} = await upbit.order_chance('KRW-VET')
+        // console.log(dat)
     // }
     // {
     // }
@@ -189,11 +188,10 @@ async function start() {
         // console.log(data);
         // console.log(log);
         
-        bot = new Bot('KRW-VET',5,20);
-        // bot.play();
+        bot = new Bot('KRW-VET',5,1);
+        bot.play();
 
-        bot2 = new Bot('KRW-BTC',5,20)
-        // bot2.play();
+       
         
     }
         
