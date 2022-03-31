@@ -34,7 +34,7 @@ class Bot {
         this.stopLoss = 0.04;
         this.bid_amount = 0;
         this.ask_amount = 0;
-        this.Log = {'name':market,'log':[],'profit':""};
+        this.Log = {'name':market,'log':[],'totProfit':""};
         this.totProfit = 0;
     }
 
@@ -213,9 +213,9 @@ bot = new Bot('ZIL', 5, 100);
 
 // client.use(express.static(__dirname + '/public'));
 app.get('/', function (req, res) {
-    const log = bot.log;
-    log.push(bot.totProfit)
-    res.send(log);
+    const LOG = bot.Log;
+    LOG.totProfit = bot.totProfit;
+    res.send(LOG);
 })
 
 //------------------------------------SERVER END-----------------------------------------
