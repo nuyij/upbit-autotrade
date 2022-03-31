@@ -123,7 +123,6 @@ class Bot {
                 }
             }
             console.log(DATA);
-            console.log(this.market + ' profit : ' + profit);
             console.log(this.market + ' tot profit : ' + this.totProfit);
         }
     }
@@ -210,7 +209,7 @@ const server = app.listen('1111', () => {
     console.log("connect server");
 });
 //------------------------------------SERVER-----------------------------------------
-bot = new Bot('ZIL', 1, 100);
+bot = new Bot('ZIL', 5, 100);
 
 // client.use(express.static(__dirname + '/public'));
 app.get('/', function (req, res) {
