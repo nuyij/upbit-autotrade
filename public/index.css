@@ -5,7 +5,7 @@ body{
     background-color: #cfcfcf;
 }
 nav{
-    width: 200px;
+    width: 100px;
 }
 header{
     display: flex;
@@ -19,8 +19,16 @@ header{
     color: white;
 }
 
-section{
-    width: 700px;
+.search{
+    left: 200px;
+    margin-right: 10px;
+}
+
+#searchBar{
+    width: 300px;
+}
+#searchBtn{
+    margin-right: 100px;
 }
 
 select{

@@ -16,41 +16,33 @@
 <body>
     <header>
         <nav>MY</nav>
-        <section>
-            <select>
-                <option>선택</option>
-                <option>1111</option>
-                <option>2222</option>
-            </select>
-            <select>
-                <option>bollinder b</option>
+            <div class="search">
+                <input id="searchBar" type="text" placeholder="input the accurate english(ex: BTC)">
+            </div>
+            <select id="candle">
+                <option>candle</option>
                 <option>1</option>
                 <option>5</option>
                 <option>15</option>
                 <option>60</option>
                 <option>240</option>
-                <option>1d</option>
             </select>
-            <select>
-                <option>bollinder s</option>
-                <option>1</option>
-                <option>5</option>
-                <option>15</option>
-                <option>60</option>
-                <option>240</option>
-                <option>1d</option>
+            <select id="askPoint">
+                <option>ask(sell) point</option>
+                <option>highband</option>
+                <option>centerband</option>
             </select>
-        </section>
-        <div class="myInfo">
+            <button id="searchBtn">START</button>
+        <!-- <div class="myInfo">
             <div class="startTime">03-25-11</div>
             <div class="startBalance">100</div>
             <div class="nowBalance">200</div>
             <div class="totProfit">10</div>
-        </div>
+        </div> -->
     </header>
     <main>
         <div class="list-header">
-            <div class="component">state: waiting</div>
+            <div class="component">trading state</div>
             <div class="component">name</div>
             <div class="component">price</div>
             <div class="component">profit</div>
@@ -64,8 +56,8 @@
                     <div class="component">price</div>
                     <div class="component">profit</div>
                     <button class="button" id="logBtn">LOG</button>
-                    <button class="button" id="stopBtn">STOP</button>
                     <button class="button" id="playBtn">PLAY</button>
+                    <button class="button" id="stopBtn">DEL</button>
                 </div>
             </li>
             <li>
@@ -81,6 +73,6 @@
             </li>
         </ul>
     </main>
-    <script src="index.js"></script>
+    <script src="./controller.js"></script>
 </body>
 </html>

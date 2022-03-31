@@ -18,7 +18,7 @@ const accessKey = 'nwFxXxXva11NH7YpH7gPjis7WiQeDHrWgVhDXs3F';
 class Bot {
     // 0. 매수 해야할지 매도해야할지 현상태 확인, 초기 데이터 수집
     // 1. 볼린저밴드 시간마다 확인 매수, 매수한거 취소
-    // 2. 매수 시 수량 저장, 현재 상태 매수로 변경
+    // 2. 매수 시 수량 저장, 현재 상태 매수중으로 변경
     // 3. 볼린저밴드 시간마다 확인 매도, -4% 달성시 매도취소, 매도
 
     constructor(market, tick_kind, vol) {
@@ -34,38 +34,37 @@ class Bot {
         this.stopLoss = 0.04;
         this.bid_amount = 0;
         this.ask_amount = 0;
-        this.log = [market];
-        this.totProfit = { 'profit': 0 };
+        this.Log = {'name':market,'log':[],'profit':""};
+        this.totProfit = 0;
     }
 
     async play() {
         this.init();
-        this.stop();
     }
     async init() {
         //마켓 정보(시세,주문 금액 단위)
         await this.upbit.order_chance(this.market)
             .then((res) => {
-                const myBal = res.data.bid_account.balance;
+                const myBal = res.data.bid_account.balance+res.data.bid_account.locked;
                 const price = res.data.ask_account.avg_buy_price;
                 const vol = res.data.ask_account.balance;
                 const locked = res.data.ask_account.locked;
                 this.balance = price * vol;
-                // // 잔고 일정 금액 이하시 스탑
-                // if(myBal<1000000){
-                //     console.log("잔고 일정 금액 돌파 : STOP");
-                // }else{
-                // }
-                //  매도주문 체크 
-                if (locked > 0) {
-                    console.log("매도 주문 취소 요망");
-                } else {
-                    if (this.balance > 5000) {
-                        this.trading = true;
+                // 잔고 일정 금액 이하시 스탑
+                if(myBal<1500000){
+                    console.log("잔고 일정 금액 돌파 : STOP");
+                }else{
+                    //  매도주문 체크 
+                    if (locked > 0) {
+                        console.log("매도 주문 취소 요망");
                     } else {
-                        this.trading = false;
+                        if (this.balance > 5000) {
+                            this.trading = true;
+                        } else {
+                            this.trading = false;
+                        }
+                        this.body();
                     }
-                    this.body();
                 }
             })
     }
@@ -74,14 +73,20 @@ class Bot {
         //매수 매도
         await this.upbit.get_bb(this.market, this.tick_kind)
             .then((res) => {
-                if (this.trading) {
-                    // 매도
-                    const highband = this.adj_price(res.highband);
-                    this.ask(highband);
-                } else {
-                    // 매수
-                    const lowband = this.adj_price(res.lowband);
-                    this.bid(lowband);
+                if(typeof res !='undefined'){ 
+                    // 데이터 있으면
+                    if (this.trading) {
+                        // 매도
+                        const highband = this.adj_price(res.highband);
+                        this.ask(highband);
+                    } else {
+                        // 매수
+                        const lowband = this.adj_price(res.lowband);
+                        this.bid(lowband);
+                    }
+                    this.stop();
+                }else{
+                    return this.body();
                 }
             })
         //무한 루프 및 주문 취소
@@ -103,21 +108,23 @@ class Bot {
         if (state == 'done') {
             const time = data.created_at;
             const side = data.side;
-            const price = data.price * data.executed_volume;
-            data = { 'time': time, 'side': side, 'price': price };
-            this.log.push(data);
-            console.log(data);
+            const price = data.price;
+            const spend = price * data.executed_volume;
+            const DATA = { 'time': time, 'side': side, 'price':price ,'spend': spend };
+            this.Log.log.push(DATA);
             if (side == 'bid') {
-                this.bid_amount = price;
+                this.bid_amount = spend;
             } else {
                 if (this.bid_amount != 0) {
-                    this.ask_amount = price;
+                    this.ask_amount = spend;
                     const profit = this.ask_amount - this.bid_amount;
-                    this.totProfit.profit += profit;
-                    console.log(this.market + ' profit : ' + profit);
-                    console.log(this.market + ' tot profit : ' + this.totProfit.profit);
+                    this.totProfit += profit;
+                    DATA.profit = profit;
                 }
             }
+            console.log(DATA);
+            console.log(this.market + ' profit : ' + profit);
+            console.log(this.market + ' tot profit : ' + this.totProfit);
         }
     }
 
@@ -139,9 +146,6 @@ class Bot {
                         })
                 })
         }
-        setTimeout(() => {
-            this.stop()
-        }, 500);
     }
 
     async bid(price) {
@@ -205,19 +209,17 @@ app.use(bodyparser.urlencoded({ extended: true }));
 const server = app.listen('1111', () => {
     console.log("connect server");
 });
-const CLIENT = client.listen('2222', () => {
-    console.log("connect client");
-});
+//------------------------------------SERVER-----------------------------------------
+bot = new Bot('ZIL', 1, 100);
 
-//------------------------------------CLIENT-----------------------------------------
-
-client.use(express.static(__dirname + '/public'));
-client.get('/', function (req, res) {
+// client.use(express.static(__dirname + '/public'));
+app.get('/', function (req, res) {
+    const log = bot.log;
+    log.push(bot.totProfit)
     res.send(log);
 })
 
-const log = [];
-//------------------------------------APP SERVER-----------------------------------------
+//------------------------------------SERVER END-----------------------------------------
 
 
 
@@ -236,18 +238,8 @@ async function start() {
 
 
         //Bot ( market, min : candle , vol of money(만) )
-        zil = new Bot('KRW-ZIL', 5, 100);
-        aave = new Bot('KRW-AAVE', 5, 10);
-        waves = new Bot('KRW-WAVES', 1, 80);
-        vet = new Bot('KRW-VET', 5, 20);
 
-        waves.play();
-        // aave.play();
-        // setTimeout(()=>{
-        //     vet.play();
-        // },2000);
-        // waves.play();
-        // zil.play();
+        bot.play();
     }
 
 }
