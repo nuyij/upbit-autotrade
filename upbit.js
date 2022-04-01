@@ -237,8 +237,9 @@ async function start() {
 
 
         //Bot ( market, min : candle , vol of money(만) )
-
-        bot.play();
+        // bot.play();
+        let data = await upbit.get_ema('KRW-ZIL',5,1);
+        console.log(data);
     }
 
 }
