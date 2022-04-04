@@ -238,7 +238,7 @@ async function start() {
 
         //Bot ( market, min : candle , vol of money(만) )
         // bot.play();
-        let data = await upbit.get_macd('KRW-ZIL',15);
+        let data = await upbit.get_macd('KRW-ZIL',5);
         console.log(data);
     }
 
