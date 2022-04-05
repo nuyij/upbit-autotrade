@@ -21,14 +21,15 @@ class Bot {
     // 2. 매수 시 수량 저장, 현재 상태 매수중으로 변경
     // 3. 볼린저밴드 시간마다 확인 매도, -4% 달성시 매도취소, 매도
 
-    constructor(market, tick_kind, vol) {
+    constructor(market, vol) {
         this.upbit = new Upbit(secretKey, accessKey)
         this.market = 'KRW-' + market;
-        this.tick_kind = tick_kind;
+        this.tick_kind ;
         this.vol = vol;
-        this.ms = tick_kind * 60000 / 10;
+        this.trade_price ;
+        this.ms ;
         this.unit;
-        this.trading;
+        this.trading = false;
         this.balance;
         this.uuid;
         this.stopLoss = 0.04;
@@ -36,37 +37,49 @@ class Bot {
         this.ask_amount = 0;
         this.Log = {'name':market,'log':[],'totProfit':""};
         this.totProfit = 0;
+        this.ready = false;
     }
 
     async play() {
-        this.init();
+        let r = await this.upbit.market_minute(this.market,1,1);
+        this.trade_price = r.data.trade_price;
+        await this.init();
     }
     async init() {
         //마켓 정보(시세,주문 금액 단위)
         await this.upbit.order_chance(this.market)
             .then((res) => {
-                const myBal = res.data.bid_account.balance+res.data.bid_account.locked;
+                console.log(res);
                 const price = res.data.ask_account.avg_buy_price;
                 const vol = res.data.ask_account.balance;
-                const locked = res.data.ask_account.locked;
+                const locked1 = res.data.ask_account.locked;
+                const locked2 = res.data.bid_account.locked;
+                const myBal = vol+locked2;
                 this.balance = price * vol;
                 // 잔고 일정 금액 이하시 스탑
                 if(myBal<1500000){
-                    console.log("잔고 일정 금액 돌파 : STOP");
+                    console.log("잔고 일정 금액 돌파 : STOP"); return;
                 }else{
                     //  매도주문 체크 
-                    if (locked > 0) {
-                        console.log("매도 주문 취소 요망");
+                    if (locked2 > 0) {
+                        console.log("매도 주문 취소 요망"); return;
                     } else {
                         if (this.balance > 5000) {
                             this.trading = true;
                         } else {
                             this.trading = false;
                         }
-                        this.body();
+                        this.getReady();
                     }
                 }
             })
+    }
+
+    async getReady() {
+        await this.upbit.get_macd(this.market,240)
+        .then((res)=>{
+            this.checkMACD(res.macd,res.oscillator,-1)
+        })
     }
     async body() {
         //bollinger band
@@ -77,10 +90,12 @@ class Bot {
                     // 데이터 있으면
                     if (this.trading) {
                         // 매도
+                        console.log('-------selling-------');
                         const highband = this.adj_price(res.highband);
                         this.ask(highband);
                     } else {
                         // 매수
+                        console.log('-------buying-------');
                         const lowband = this.adj_price(res.lowband);
                         this.bid(lowband);
                     }
@@ -100,6 +115,15 @@ class Bot {
                         })
                 })
         }, this.ms)
+    }
+
+    //macd 체크
+    checkMACD(macd,osc,limitLine){
+        if(osc<limitLine && macd < osc * 2){
+            this.ready = true;
+        }else if(osc < limitLine*0.5 && macd < osc * 5 ){
+            this.ready = true;
+        }
     }
 
     // 로그 저장
@@ -209,7 +233,6 @@ const server = app.listen('1111', () => {
     console.log("connect server");
 });
 //------------------------------------SERVER-----------------------------------------
-bot = new Bot('ZIL', 5, 100);
 
 // client.use(express.static(__dirname + '/public'));
 app.get('/', function (req, res) {
@@ -238,8 +261,12 @@ async function start() {
 
         //Bot ( market, min : candle , vol of money(만) )
         // bot.play();
-        let data = await upbit.get_macd('KRW-ZIL',5);
-        console.log(data);
+        // let data = await upbit.get_macd('KRW-ZIL',15);
+        // console.log(data);
+        // const abd= new upbit.abc("kim");
+        // abd.myname();
+        const bot = new Bot('ZIL', 1);
+        await bot.play();
     }
 
 }
