@@ -7,11 +7,11 @@ const cors = require('cors');
 const bodyparser = require('body-parser');
 
 // 집
-// const secretKey = 'p4rWJsbKVvUk5QemMLm5KHIyjoqq81K5lrvnLUqx';
-// const accessKey = 'k2eJf0aqdpCSfm65RkwuWpUHpTROiGMqNLUmAxwW';
+const secretKey = 'p4rWJsbKVvUk5QemMLm5KHIyjoqq81K5lrvnLUqx';
+const accessKey = 'k2eJf0aqdpCSfm65RkwuWpUHpTROiGMqNLUmAxwW';
 // 사무실
-const secretKey = 'tEYvH9OsmLeQIhXsusvq4sx23wzUA2csJcqTWofw';
-const accessKey = 'nwFxXxXva11NH7YpH7gPjis7WiQeDHrWgVhDXs3F';
+// const secretKey = 'tEYvH9OsmLeQIhXsusvq4sx23wzUA2csJcqTWofw';
+// const accessKey = 'nwFxXxXva11NH7YpH7gPjis7WiQeDHrWgVhDXs3F';
 
 // tick_kind : 분봉 캔들 종류 / 1, 3 , 5 , 10 ,15 , 30 ,60 , 240
 // vol : 쓸 돈
@@ -21,35 +21,36 @@ class Bot {
     // 2. 매수 시 수량 저장, 현재 상태 매수중으로 변경
     // 3. 볼린저밴드 시간마다 확인 매도, -4% 달성시 매도취소, 매도
 
-    constructor(market, vol) {
+    constructor(market, tick_kind,vol) {
         this.upbit = new Upbit(secretKey, accessKey)
         this.market = 'KRW-' + market;
-        this.tick_kind ;
+        this.tick_kind = tick_kind;
         this.vol = vol;
         this.trade_price ;
-        this.ms ;
+        this.ms = tick_kind*60000/10;
         this.unit;
         this.trading = false;
         this.balance;
         this.uuid;
-        this.stopLoss = 0.04;
+        this.stopLoss = 0.02;
         this.bid_amount = 0;
         this.ask_amount = 0;
         this.Log = {'name':market,'log':[],'totProfit':""};
         this.totProfit = 0;
         this.ready = false;
+        this.limitLie = -700000;
     }
 
     async play() {
-        let r = await this.upbit.market_minute(this.market,1,1);
-        this.trade_price = r.data.trade_price;
+        // let r = await this.upbit.market_minute(this.market,1,1);
+        // this.trade_price = r.data.trade_price;
         await this.init();
+        await this.getReady();
     }
     async init() {
         //마켓 정보(시세,주문 금액 단위)
         await this.upbit.order_chance(this.market)
             .then((res) => {
-                console.log(res);
                 const price = res.data.ask_account.avg_buy_price;
                 const vol = res.data.ask_account.balance;
                 const locked1 = res.data.ask_account.locked;
@@ -57,11 +58,11 @@ class Bot {
                 const myBal = vol+locked2;
                 this.balance = price * vol;
                 // 잔고 일정 금액 이하시 스탑
-                if(myBal<1500000){
+                if(myBal<1000000){
                     console.log("잔고 일정 금액 돌파 : STOP"); return;
                 }else{
                     //  매도주문 체크 
-                    if (locked2 > 0) {
+                    if (locked1 > 0) {
                         console.log("매도 주문 취소 요망"); return;
                     } else {
                         if (this.balance > 5000) {
@@ -69,17 +70,22 @@ class Bot {
                         } else {
                             this.trading = false;
                         }
-                        this.getReady();
+                        if(this.ready){
+                           this.body();
+                        }else{
+                            setTimeout(()=>this.init(),300);
+                        }
                     }
                 }
             })
     }
 
     async getReady() {
-        await this.upbit.get_macd(this.market,240)
+        await this.upbit.get_macd(this.market,this.tick_kind)
         .then((res)=>{
-            this.checkMACD(res.macd,res.oscillator,-1)
+            this.checkMACD(res.macd,res.oscillator)
         })
+        setTimeout(()=>this.getReady(),300)
     }
     async body() {
         //bollinger band
@@ -90,12 +96,13 @@ class Bot {
                     // 데이터 있으면
                     if (this.trading) {
                         // 매도
-                        console.log('-------selling-------');
+                        console.log('-----------selling-----------');
                         const highband = this.adj_price(res.highband);
-                        this.ask(highband);
+                        const centerband = this.adj_price(res.centerband);
+                        this.ask(centerband);
                     } else {
                         // 매수
-                        console.log('-------buying-------');
+                        console.log('-----------buying-----------');
                         const lowband = this.adj_price(res.lowband);
                         this.bid(lowband);
                     }
@@ -118,11 +125,13 @@ class Bot {
     }
 
     //macd 체크
-    checkMACD(macd,osc,limitLine){
-        if(osc<limitLine && macd < osc * 2){
-            this.ready = true;
-        }else if(osc < limitLine*0.5 && macd < osc * 5 ){
-            this.ready = true;
+    checkMACD(macd,osc){
+        if(!this.trading){
+            if(macd<this.limitLie && osc > macd+5000 && osc < 0){
+                this.ready = true;
+            }else{
+                this.ready = false;
+            }
         }
     }
 
@@ -164,7 +173,8 @@ class Bot {
                                 this.upbit.order_delete(this.uuid)
                                     .then(() => {
                                         this.ask(this.adj_price(price));
-                                    })
+                                    });
+                                return this.init();
                             }
                         })
                 })
@@ -234,6 +244,7 @@ const server = app.listen('1111', () => {
 });
 //------------------------------------SERVER-----------------------------------------
 
+const bot = new Bot('BTC',5, 1);
 // client.use(express.static(__dirname + '/public'));
 app.get('/', function (req, res) {
     const LOG = bot.Log;
@@ -265,7 +276,6 @@ async function start() {
         // console.log(data);
         // const abd= new upbit.abc("kim");
         // abd.myname();
-        const bot = new Bot('ZIL', 1);
         await bot.play();
     }
 
