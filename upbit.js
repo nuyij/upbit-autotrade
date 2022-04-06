@@ -39,6 +39,7 @@ class Bot {
         this.totProfit = 0;
         this.ready = false;
         this.limitLie = -700000;
+        this.isBorkenLimit = false;
     }
 
     async play() {
@@ -85,7 +86,7 @@ class Bot {
         .then((res)=>{
             this.checkMACD(res.macd,res.oscillator)
         })
-        setTimeout(()=>this.getReady(),300)
+        setTimeout(()=>this.getReady(),1000)
     }
     async body() {
         //bollinger band
@@ -127,10 +128,19 @@ class Bot {
     //macd 체크
     checkMACD(macd,osc){
         if(!this.trading){
-            if(macd<this.limitLie && osc > macd+5000 && osc < 0){
-                this.ready = true;
+            if(this.isBorkenLimit){
+                if(macd < -200000 && osc > macd + 5000 && osc < 0){
+                    this.ready = true;
+                }else if(macd > -30000){
+                    this.isBorkenLimit = false;
+                }
             }else{
-                this.ready = false;
+                if(macd<this.limitLie && osc > macd+5000 && osc < 0){
+                    this.ready = true;
+                }else{
+                    this.ready = false;
+                }
+
             }
         }
     }
@@ -170,6 +180,8 @@ class Bot {
                         .then((oc) => {
                             const myPrice = oc.data.ask_account.avg_buy_price;
                             if (myPrice * this.stopLoss > price) {
+                                this.isBorkenLimit = true;
+                                this.ready = false;
                                 this.upbit.order_delete(this.uuid)
                                     .then(() => {
                                         this.ask(this.adj_price(price));
