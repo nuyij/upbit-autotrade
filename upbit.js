@@ -52,29 +52,40 @@ class Bot {
         //마켓 정보(시세,주문 금액 단위)
         await this.upbit.order_chance(this.market)
             .then((res) => {
-                const price = res.data.ask_account.avg_buy_price;
-                const vol = res.data.ask_account.balance;
-                const locked1 = res.data.ask_account.locked;
-                const locked2 = res.data.bid_account.locked;
-                const myBal = vol+locked2;
-                this.balance = price * vol;
-                // 잔고 일정 금액 이하시 스탑
-                if(myBal<1000000){
-                    console.log("잔고 일정 금액 돌파 : STOP"); return;
+                if(typeof res.data=='undefined' || res.data == null){
+                    setTimeout(()=>{
+                        return this.init();
+                    },1000)
                 }else{
-                    //  매도주문 체크 
-                    if (locked1 > 0) {
-                        console.log("매도 주문 취소 요망"); return;
-                    } else {
-                        if (this.balance > 5000) {
-                            this.trading = true;
+
+                    const price = res.data.ask_account.avg_buy_price;
+                    const vol = res.data.ask_account.balance;
+                    const locked1 = res.data.ask_account.locked;
+                    const locked2 = res.data.bid_account.locked;
+                    const myBal = vol+locked2;
+                    this.balance = price * vol;
+                    // 잔고 일정 금액 이하시 스탑
+                    if(myBal<1000000){
+                        console.log("잔고 일정 금액 돌파 : STOP"); return;
+                    }else{
+                        //  매도주문 체크 
+                        if (locked1 > 0) {
+                            console.log("매도 주문 취소 요망"); return;
                         } else {
-                            this.trading = false;
-                        }
-                        if(this.ready){
-                           this.body();
-                        }else{
-                            setTimeout(()=>this.init(),500);
+                            if (this.balance > 5000) {
+                                this.trading = true;
+                            } else {
+                                this.trading = false;
+                            }
+                            if(this.trading){
+                                this.body();
+                            }else{
+                                if(this.ready){
+                                   this.body();
+                                }else{
+                                    setTimeout(()=>this.init(),1000);
+                                }
+                            }
                         }
                     }
                 }
@@ -84,6 +95,7 @@ class Bot {
     async getReady() {
         await this.upbit.get_macd(this.market,this.tick_kind)
         .then((res)=>{
+            console.log('------------bot working--------');
             this.checkMACD(res.macd,res.oscillator)
         })
         setTimeout(()=>this.getReady(),1000)
