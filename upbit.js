@@ -32,21 +32,21 @@ class Bot {
         this.trading = false;
         this.balance;
         this.uuid;
-        this.stopLoss = 0.02;
+        this.stopLoss = 0.01;
         this.bid_amount = 0;
         this.ask_amount = 0;
         this.Log = {'name':market,'log':[],'totProfit':""};
         this.totProfit = 0;
         this.ready = false;
-        this.limitLie = -700000;
+        this.limitLie = -70000;
         this.isBorkenLimit = false;
     }
 
     async play() {
         // let r = await this.upbit.market_minute(this.market,1,1);
         // this.trade_price = r.data.trade_price;
-        await this.init();
         await this.getReady();
+        await this.init();
     }
     async init() {
         //마켓 정보(시세,주문 금액 단위)
@@ -71,10 +71,15 @@ class Bot {
                         } else {
                             this.trading = false;
                         }
-                        if(this.ready){
-                           this.body();
+                        if(this.trading){
+                            this.body();
                         }else{
-                            setTimeout(()=>this.init(),300);
+                            if(this.ready){
+                               this.body();
+                            }else{
+                                setTimeout(()=>this.init(),1000);
+                            }
+
                         }
                     }
                 }
@@ -100,7 +105,7 @@ class Bot {
                         console.log('-----------selling-----------');
                         const highband = this.adj_price(res.highband);
                         const centerband = this.adj_price(res.centerband);
-                        this.ask(centerband);
+                        this.ask(highband);
                     } else {
                         // 매수
                         console.log('-----------buying-----------');
