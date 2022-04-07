@@ -7,11 +7,11 @@ const cors = require('cors');
 const bodyparser = require('body-parser');
 
 // 집
-// const secretKey = 'p4rWJsbKVvUk5QemMLm5KHIyjoqq81K5lrvnLUqx';
-// const accessKey = 'k2eJf0aqdpCSfm65RkwuWpUHpTROiGMqNLUmAxwW';
+const secretKey = 'p4rWJsbKVvUk5QemMLm5KHIyjoqq81K5lrvnLUqx';
+const accessKey = 'k2eJf0aqdpCSfm65RkwuWpUHpTROiGMqNLUmAxwW';
 // 사무실
-const secretKey = 'tEYvH9OsmLeQIhXsusvq4sx23wzUA2csJcqTWofw';
-const accessKey = 'nwFxXxXva11NH7YpH7gPjis7WiQeDHrWgVhDXs3F';
+// const secretKey = 'tEYvH9OsmLeQIhXsusvq4sx23wzUA2csJcqTWofw';
+// const accessKey = 'nwFxXxXva11NH7YpH7gPjis7WiQeDHrWgVhDXs3F';
 
 // tick_kind : 분봉 캔들 종류 / 1, 3 , 5 , 10 ,15 , 30 ,60 , 240
 // vol : 쓸 돈
@@ -38,15 +38,15 @@ class Bot {
         this.Log = {'name':market,'log':[],'totProfit':""};
         this.totProfit = 0;
         this.ready = false;
-        this.limitLie = -700000;
+        this.limitLie = -70000;
         this.isBorkenLimit = false;
     }
 
     async play() {
         // let r = await this.upbit.market_minute(this.market,1,1);
         // this.trade_price = r.data.trade_price;
-        await this.init();
         await this.getReady();
+        await this.init();
     }
     async init() {
         //마켓 정보(시세,주문 금액 단위)
@@ -74,7 +74,7 @@ class Bot {
                         if(this.ready){
                            this.body();
                         }else{
-                            setTimeout(()=>this.init(),300);
+                            setTimeout(()=>this.init(),500);
                         }
                     }
                 }
@@ -100,7 +100,7 @@ class Bot {
                         console.log('-----------selling-----------');
                         const highband = this.adj_price(res.highband);
                         const centerband = this.adj_price(res.centerband);
-                        this.ask(centerband);
+                        this.ask(highband);
                     } else {
                         // 매수
                         console.log('-----------buying-----------');
