@@ -2,16 +2,15 @@ const Upbit = require('./lib/upbit_lib')
 const A = require('./lib/botClass')
 const express = require('express');
 const app = express();
-const client = express();
 const cors = require('cors');
 const bodyparser = require('body-parser');
 
 // 집
-// const secretKey = 'p4rWJsbKVvUk5QemMLm5KHIyjoqq81K5lrvnLUqx';
-// const accessKey = 'k2eJf0aqdpCSfm65RkwuWpUHpTROiGMqNLUmAxwW';
+const secretKey = 'p4rWJsbKVvUk5QemMLm5KHIyjoqq81K5lrvnLUqx';
+const accessKey = 'k2eJf0aqdpCSfm65RkwuWpUHpTROiGMqNLUmAxwW';
 // 사무실
-const secretKey = 'tEYvH9OsmLeQIhXsusvq4sx23wzUA2csJcqTWofw';
-const accessKey = 'nwFxXxXva11NH7YpH7gPjis7WiQeDHrWgVhDXs3F';
+// const secretKey = 'tEYvH9OsmLeQIhXsusvq4sx23wzUA2csJcqTWofw';
+// const accessKey = 'nwFxXxXva11NH7YpH7gPjis7WiQeDHrWgVhDXs3F';
 
 // tick_kind : 분봉 캔들 종류 / 1, 3 , 5 , 10 ,15 , 30 ,60 , 240
 // vol : 쓸 돈
@@ -32,14 +31,26 @@ class Bot {
         this.trading = false;
         this.balance;
         this.uuid;
-        this.stopLoss = 0.01;
         this.bid_amount = 0;
         this.ask_amount = 0;
         this.Log = {'name':market,'log':[],'totProfit':""};
         this.totProfit = 0;
         this.ready = false;
-        this.limitLie = 0;
-        this.isBorkenLimit = false;
+        if(market=='BTC'){
+            this.limitLie1 = -17000;
+            this.limitLie2 = -150000;
+            this.limitLie3 = -200000;
+            this.limitLie4 = -280000;
+            this.stopLoss = 1-0.0045;
+        }else if(market =='SOL'){
+            this.stopLoss = 1-0.008;
+            this.limitLie1 = -40;
+            this.limitLie2 = -400;
+            this.limitLie3 = -700;
+            this.limitLie4 = -1500;
+        }
+        this.presentMacd;
+        this.isBorkenLimit = 0;
     }
 
     async play() {
@@ -49,107 +60,136 @@ class Bot {
         await this.init();
     }
     async init() {
-        //마켓 정보(시세,주문 금액 단위)
+        try {
+               //마켓 정보(시세,주문 금액 단위)
         await this.upbit.order_chance(this.market)
-            .then((res) => {
-                if(res.data == null || typeof res.data =='undefined'){
-                    setTimeout(()=>{
-                        return this.init();
-                    },1000)
+        .then((res) => {
+            if(typeof res.data=='undefined' || res.data == null){
+                setTimeout(()=>{
+                    return this.init();
+                },1000)
+            }else{
+
+                const price = res.data.ask_account.avg_buy_price;
+                const vol = res.data.ask_account.balance;
+                const locked1 = res.data.ask_account.locked;
+                const locked2 = res.data.bid_account.locked;
+                const myBal = vol+locked2;
+                this.balance = price * vol;
+                // 잔고 일정 금액 이하시 스탑
+                if(myBal<1000000){
+                    console.log("잔고 일정 금액 돌파 : STOP"); return;
                 }else{
-                    const price = res.data.ask_account.avg_buy_price;
-                    const vol = res.data.ask_account.balance;
-                    const locked1 = res.data.ask_account.locked;
-                    const locked2 = res.data.bid_account.locked;
-                    const myBal = vol+locked2;
-                    this.balance = price * vol;
-                    // 잔고 일정 금액 이하시 스탑
-                    if(myBal<1000000){
-                        console.log("잔고 일정 금액 돌파 : STOP"); return;
-                    }else{
-                        //  매도주문 체크 
-                        if (locked1 > 0) {
-                            console.log("매도 주문 취소 요망"); return;
+                    //  매도주문 체크 
+                    if (locked1 > 0) {
+                        console.log("매도 주문 취소 요망"); return;
+                    } else {
+                        if (this.balance > 5000) {
+                            this.trading = true;
                         } else {
-                            if (this.balance > 5000) {
-                                this.trading = true;
-                            } else {
-                                this.trading = false;
-                            }
-                            if(this.trading){
-                                this.body();
+                            this.trading = false;
+                        }
+                        if(this.trading){
+                            this.body();
+                        }else{
+                            if(this.ready){
+                               this.body();
                             }else{
-                                if(this.ready){
-                                   this.body();
-                                }else{
-                                    setTimeout(()=>this.init(),1000);
-                                }
-    
+                                setTimeout(()=>this.init(),1000);
                             }
                         }
                     }
-
                 }
-            })
+            }
+        })
+        } catch (error) {
+            setTimeout(()=>this.init(),1000);
+        }
+     
     }
 
     async getReady() {
+        try {
         await this.upbit.get_macd(this.market,this.tick_kind)
         .then((res)=>{
-            console.log('--------bot working------');
-            this.checkMACD(res.macd,res.oscillator)
-        })
-        setTimeout(()=>this.getReady(),1000)
+                this.presentMacd = res.macd;
+                this.checkMACD(res.macd,res.oscillator)
+                setTimeout(()=>this.getReady(),1000)
+            })
+        } catch (error) {
+            setTimeout(()=>this.getReady(),1000)
+        }
     }
     async body() {
-        //bollinger band
+        try {
+            //bollinger band
         //매수 매도
         await this.upbit.get_bb(this.market, this.tick_kind)
-            .then((res) => {
-                if(typeof res !='undefined'){ 
-                    // 데이터 있으면
-                    if (this.trading) {
-                        // 매도
-                        console.log('-----------selling-----------');
-                        const highband = this.adj_price(res.highband);
-                        const centerband = this.adj_price(res.centerband);
-                        this.ask(highband);
-                    } else {
-                        // 매수
-                        console.log('-----------buying-----------');
-                        const lowband = this.adj_price(res.lowband);
-                        this.bid(lowband);
+        .then((res) => {
+            if(typeof res !='undefined'){ 
+                // 데이터 있으면
+                if (this.trading) {
+                    // 매도
+                    const highband = this.adj_price(res.highband);
+                    const centerband = this.adj_price(res.centerband);
+                    const price = (highband+centerband)/2
+                    this.ask(price);
+                } else {
+                    // 매수
+                    const trade_price = res.price;
+                    const lowband = res.lowband;
+                    let price = this.adj_price(lowband);
+                    if(trade_price < lowband){
+                        price = this.adj_price(trade_price);
                     }
-                    this.stop();
-                }else{
-                    return this.body();
+                    this.bid(price);
                 }
+                this.stop();
+            }else{
+                return this.body();
+            }
+        })
+    //무한 루프 및 주문 취소
+    setTimeout(() => {
+        this.upbit.order_delete(this.uuid)
+            .then(() => {
+                this.upbit.order_detail(this.uuid)
+                    .then((res) => {
+                        if(res.data !=null && res.data != 'undefined')
+                        this.saveLog(res.data)
+                    })
+                    this.init();
             })
-        //무한 루프 및 주문 취소
-        setTimeout(() => {
-            this.upbit.order_delete(this.uuid)
-                .then(() => {
-                    this.upbit.order_detail(this.uuid)
-                        .then((res) => {
-                            this.saveLog(res.data)
-                            this.init();
-                        })
-                })
-        }, this.ms)
+    }, this.ms)
+        } catch (error) {
+            setTimeout(()=>this.init(),1000)
+        }
+        
     }
 
     //macd 체크
     checkMACD(macd,osc){
         if(!this.trading){
-            if(this.isBorkenLimit){
-                if(macd < -200000 && osc > macd + 5000 && osc < 0){
+            if(this.isBorkenLimit == 1){
+                if(macd < this.limitLie2 && osc > macd + 5000 && osc < 0){
                     this.ready = true;
-                }else if(macd > -30000){
-                    this.isBorkenLimit = false;
+                }else if(macd > this.limitLie1){
+                    this.isBorkenLimit = 0;
+                }
+            }else if(this.isBorkenLimit == 2){
+                if(macd < this.limitLie3 && osc > macd + 5000 && osc < 0){
+                    this.ready = true;
+                }else if(macd > this.limitLie1){
+                    this.isBorkenLimit = 1;
+                }
+            }else if(this.isBorkenLimit == 3){
+                if(macd < this.limitLie4 && osc > macd + 5000 && osc < 0){
+                    this.ready = true;
+                }else if(macd > this.limitLie2){
+                    this.isBorkenLimit = 2;
                 }
             }else{
-                if(macd<this.limitLie ){
-                    // && osc > macd+5000 && osc < 0
+                if(macd<this.limitLie1 && osc < 0 ){
                     this.ready = true;
                 }else{
                     this.ready = false;
@@ -163,6 +203,15 @@ class Bot {
     saveLog(data) {
         const state = data.state;
         if (state == 'done') {
+            if(this.presentMacd > this.limitLie1){
+                this.isBorkenLimit = 0;
+            }else if(this.presentMacd < this.limitLie1){
+                this.isBorkenLimit = 1;
+            }else if(this.presentMacd < this.limitLie2){
+                this.isBorkenLimit = 2;
+            }else if(this.presentMacd < this.limitLie3){
+                this.isBorkenLimit = 3;
+            }
             const time = data.created_at;
             const side = data.side;
             const price = data.price;
@@ -186,47 +235,77 @@ class Bot {
 
     //손절가시 손절
     async stop() {
-        if (this.trading) {
-            await this.upbit.get_bb(this.market, this.tick_kind)
-                .then((res) => {
-                    const price = res.price;
-                    this.upbit.order_chance(this.market)
-                        .then((oc) => {
-                            const myPrice = oc.data.ask_account.avg_buy_price;
-                            if (myPrice * this.stopLoss > price) {
-                                this.isBorkenLimit = true;
-                                this.ready = false;
-                                this.upbit.order_delete(this.uuid)
-                                    .then(() => {
-                                        this.ask(this.adj_price(price));
-                                    });
-                                return this.init();
-                            }
-                        })
-                })
+        try {
+            if (this.trading) {
+                await this.upbit.get_bb(this.market, this.tick_kind)
+                    .then((res) => {
+                        const price = res.price;
+                        this.upbit.order_chance(this.market)
+                            .then((oc) => {
+                                const myPrice = oc.data.ask_account.avg_buy_price;
+                                console.log(price);
+                                console.log(myPrice * this.stopLoss);
+                                if (myPrice * this.stopLoss > price) {
+                                    if(this.presentMacd > this.limitLie1){
+                                        this.isBorkenLimit = 0;
+                                    }else if(this.presentMacd < this.limitLie1){
+                                        this.isBorkenLimit = 1;
+                                    }else if(this.presentMacd < this.limitLie2){
+                                        this.isBorkenLimit = 2;
+                                    }else if(this.presentMacd < this.limitLie3){
+                                        this.isBorkenLimit = 3;
+                                    }
+                                    this.ready = false;
+                                    this.upbit.order_delete(this.uuid)
+                                        .then(() => {
+                                            this.ask(this.adj_price(price));
+                                            setTimeout(()=>{
+                                                return this.init();
+                                            },this.ms)
+                                        });
+                                }
+                            })
+                    })
+            }
+        } catch (error) {
+            setTimeout(()=>{
+                return this.init();
+            },this.ms)
         }
     }
 
     async bid(price) {
-        const volume = this.vol * 10000 / price;
-        await this.upbit.order_bid(this.market, volume, price)
-            .then((res) => {
-                this.uuid = res.data.uuid
-            })
+        try {
+            const volume = this.vol * 10000 / price;
+            await this.upbit.order_bid(this.market, volume, price)
+                .then((res) => {
+                    this.uuid = res.data.uuid
+                })
+        } catch (error) {
+            setTimeout(()=>this.init(),1000)
+        }
     }
 
     async ask(price) {
+        try {
         await this.upbit.order_chance(this.market)
-            .then((res) => {
-                this.balance = res.data.ask_account.balance;
-                this.upbit.order_ask(this.market, this.balance, price)
-                    .then((oa) => {
-                        this.uuid = oa.data.uuid;
+        .then((res) => {
+                    this.balance = res.data.ask_account.balance;
+                    this.upbit.order_ask(this.market, this.balance, price)
+                        .then((oa) => {
+                            if(oa.data==null || oa.data == 'undefined'){
+                                setTimeout(()=>this.init(),1000)
+                            }else{
+                                this.uuid = oa.data.uuid;
+                            }
+                        })
                     })
-            })
-    }
-
-    // 주문하는 단위에 맞게 금액 조정
+                } catch (error) {
+                    setTimeout(()=>this.init(),1000)
+                }
+                }
+                
+                // 주문하는 단위에 맞게 금액 조정
     adj_price(price) {
         this.oreder_unit(price);
         price = price - price % this.unit;
@@ -307,4 +386,3 @@ async function start() {
 
 }
 start();
-
