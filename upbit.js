@@ -23,7 +23,7 @@ const server = app.listen("1111", () => {
 });
 //------------------------------------SERVER-----------------------------------------
 
-const bot = new Bot("SOL", 5, 1);
+const bot = new Bot("SOL", 5, 70);
 // client.use(express.static(__dirname + '/public'));
 app.get("/", function (req, res) {
   const LOG = bot.Log;
