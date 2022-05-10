@@ -1,5 +1,6 @@
 const Upbit = require("./lib/upbit_lib");
 const Bot = require("./lib/botClass");
+const Test = require("./lib/bakcTest")
 const express = require("express");
 const app = express();
 const cors = require("cors");
@@ -34,6 +35,8 @@ app.get("/", function (req, res) {
 //------------------------------------SERVER END-----------------------------------------
 
 async function start() {
+  const test = new Test("KRW-XRP")
+  test.play()
   // const upbit = new Upbit(secretKey, accessKey)
 
   {
@@ -52,7 +55,7 @@ async function start() {
     // abd.myname();
     // await bot.play();
   }
-  bot.play();
+  // bot.play();
 
 }
 start();
