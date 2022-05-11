@@ -35,7 +35,7 @@ app.get("/", function (req, res) {
 //------------------------------------SERVER END-----------------------------------------
 
 async function start() {
-  const test = new Test("KRW-XRP")
+  const test = new Test("KRW-SOL",1)
   test.play()
   // const upbit = new Upbit(secretKey, accessKey)
 
