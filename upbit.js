@@ -36,7 +36,7 @@ app.get("/", function (req, res) {
 
 async function start() {
   const test = new Test("KRW-SOL",1)
-  test.play()
+  test.excel()
   // const upbit = new Upbit(secretKey, accessKey)
 
   {
