@@ -1,5 +1,6 @@
 const Upbit = require("./lib/upbit_lib");
 const Bot = require("./lib/botClass");
+const Bot_1per = require("./lib/bot")
 const Test = require("./lib/backTest")
 const express = require("express");
 const app = express();
@@ -19,9 +20,9 @@ app.use(cors());
 app.use(bodyparser.json());
 app.use(bodyparser.urlencoded({ extended: true }));
 
-const server = app.listen("1111", () => {
-  console.log("connect server");
-});
+// const server = app.listen("1111", () => {
+//   console.log("connect server");
+// });
 //------------------------------------SERVER-----------------------------------------
 
 const bot = new Bot("BTC", 5, 25);
@@ -35,8 +36,8 @@ app.get("/", function (req, res) {
 //------------------------------------SERVER END-----------------------------------------
 
 async function start() {
-  const test = new Test("KRW-BTC",5)
-  test.play()
+  const bot = new Bot_1per("BTC",3,30)
+  bot.play();
   // const upbit = new Upbit(secretKey, accessKey)
 
   {
