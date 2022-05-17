@@ -1,7 +1,23 @@
 const Test = require("./lib/backTest")
 
-function start(){
-    const test = new Test('KRW-BTC',3);
-    test.excel();
+async function start() {
+    const sleep = async (ms) => {
+        return new Promise(
+            (resolve, reject) =>
+                setTimeout(
+                    () => resolve(),
+                    ms
+                )
+        );
+    }
+    const freq = 60*200;
+    const XRP = new Test('KRW-XRP', 1);
+    XRP.play();
+    // await sleep(freq);
+    // const SOL = new Test('KRW-SOL', 3)
+    await sleep(freq);
+    const ETH = new Test('KRW-ETH', 3)
+    await sleep(freq);
+    const MANA = new Test('KRW-MANA', 3)
 }
 start();

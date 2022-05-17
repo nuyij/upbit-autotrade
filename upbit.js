@@ -25,18 +25,18 @@ app.use(bodyparser.urlencoded({ extended: true }));
 // });
 //------------------------------------SERVER-----------------------------------------
 
-const bot = new Bot("BTC", 5, 25);
+// const bot = new Bot("BTC", 5, 25);
 // client.use(express.static(__dirname + '/public'));
-app.get("/", function (req, res) {
-  const LOG = bot.Log;
-  LOG.totProfit = bot.totProfit;
-  res.send(LOG);
-});
+// app.get("/", function (req, res) {
+//   const LOG = bot.Log;
+//   LOG.totProfit = bot.totProfit;
+//   res.send(LOG);
+// });
 
 //------------------------------------SERVER END-----------------------------------------
 
 async function start() {
-  const bot = new Bot_1per("BTC",3,30)
+  const bot = new Bot_1per("XRP",3,10)
   bot.play();
   // const upbit = new Upbit(secretKey, accessKey)
 
