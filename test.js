@@ -11,7 +11,7 @@ async function start() {
         );
     }
     const freq = 60*200;
-    const XRP = new Test('KRW-XRP', 3);
+    const XRP = new Test('KRW-XRP',15);
     XRP.play();
     // await sleep(freq);
     // const SOL = new Test('KRW-SOL', 3)
