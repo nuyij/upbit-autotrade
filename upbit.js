@@ -1,7 +1,8 @@
 const Upbit = require("./lib/upbit_lib");
 const Bot = require("./lib/botClass");
 const Bot_1per = require("./lib/bot")
-const Bot_macd = require("./lib/macd")
+const Bot_macd = require("./lib/macd.js")
+const Bot_rapid = require("./lib/rapid.js")
 const Test = require("./lib/backTest")
 const express = require("express");
 const app = express();
@@ -16,7 +17,11 @@ const accessKey = "k2eJf0aqdpCSfm65RkwuWpUHpTROiGMqNLUmAxwW";
 // const accessKey = 'nwFxXxXva11NH7YpH7gPjis7WiQeDHrWgVhDXs3F';
 
 async function start() {
-  const bot = new Bot_macd("WEMIX",15,10)
-  bot.play();
+  const wemix = new Bot_macd("WEMIX",15,3)
+  const etc = new Bot_macd("ETC",15,3)
+  const rapid = new Bot_rapid(3)
+  wemix.play();
+  etc.play();
+  rapid.play();
 }
 start();
