@@ -18,10 +18,10 @@ const accessKey = "k2eJf0aqdpCSfm65RkwuWpUHpTROiGMqNLUmAxwW";
 
 async function start() {
   const wemix = new Bot_macd("WEMIX",15,3)
-  const etc = new Bot_macd("ETC",15,3)
+  const sand = new Bot_macd("SAND",240,3)
   const rapid = new Bot_rapid(3)
   wemix.play();
-  etc.play();
+  sand.play();
   rapid.play();
 }
 start();
