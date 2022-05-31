@@ -17,9 +17,9 @@ const accessKey = "k2eJf0aqdpCSfm65RkwuWpUHpTROiGMqNLUmAxwW";
 // const accessKey = 'nwFxXxXva11NH7YpH7gPjis7WiQeDHrWgVhDXs3F';
 
 async function start() {
-  const wemix = new Bot_macd("WEMIX",15,3)
-  const sand = new Bot_macd("SAND",240,3)
-  const rapid = new Bot_rapid(3)
+  const wemix = new Bot_macd("WEMIX",15,1)
+  const sand = new Bot_macd("SAND",240,1)
+  const rapid = new Bot_rapid(1)
   wemix.play();
   sand.play();
   rapid.play();
