@@ -20,8 +20,8 @@ async function start() {
   const wemix = new Bot_macd("WEMIX",15,1)
   const sand = new Bot_macd("SAND",240,1)
   const rapid = new Bot_rapid(1)
-  wemix.play();
-  sand.play();
+  // wemix.play();
+  // sand.play();
   rapid.play();
 }
 start();
